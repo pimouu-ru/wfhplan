@@ -966,19 +966,17 @@ function buildDashboard() {
   if(!d) return filters+buildLoading();
   if(d.error) return filters+`<div class="empty-state"><span class="emoji">❌</span><p>โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</p></div>`;
 
-  // ป้องกัน undefined — ใช้ ?? 0 ทุก field
-  const checkinVal  = d.checkin  ?? d.checkinCount  ?? 0;
-  const missingVal  = d.missing  ?? d.missingCount  ?? 0;
-  const checkoutVal = d.checkout ?? d.checkoutCount ?? 0;
-  const totalVal    = d.total    ?? d.totalCount    ?? 0;
-
-  console.log('📊 KPI values:', {checkinVal, missingVal, checkoutVal, totalVal, raw: d});
+  const checkinVal  = d.checkin  ?? 0;
+  const checkoutVal = d.checkout ?? 0;
+  const totalVal    = d.total    ?? 0;
+  const missingVal  = d.missing  ?? 0;
+  const workingVal  = Math.max(0, checkinVal - checkoutVal);  // กำลังทำงานอยู่
 
   const kpis = [
-    {icon:'✅',val:checkinVal,  label:'Check-in',  color:'var(--lg)',    border:'#a8e8c4',bg:'#e6f9f0'},
-    {icon:'⏳',val:missingVal,  label:'รอลงชื่อ',  color:'var(--red)',   border:'#ffcfcf',bg:'#ffeaea'},
-    {icon:'🌆',val:checkoutVal, label:'Check-out', color:'var(--orange)',border:'#ffd0a0',bg:'#fff5ea'},
-    {icon:'👥',val:totalVal,    label:'ทั้งหมด',   color:'var(--navy)',  border:'var(--border)',bg:'var(--bg2)'},
+    {icon:'✅', val:checkinVal,  label:'เช็คอินแล้ว',      color:'var(--lg)',     border:'#a8e8c4', bg:'#e6f9f0'},
+    {icon:'💼', val:workingVal,  label:'กำลังทำงานอยู่',   color:'var(--sky)',    border:'#a8d4f0', bg:'#e6f3fc'},
+    {icon:'🌆', val:checkoutVal, label:'เช็คเอาท์แล้ว',    color:'var(--orange)', border:'#ffd0a0', bg:'#fff5ea'},
+    {icon:'⏳', val:missingVal,  label:'ยังไม่ได้ลงชื่อ',  color:'var(--red)',    border:'#ffcfcf', bg:'#ffeaea'},
   ];
 
   const kpiGrid = `
@@ -1001,7 +999,7 @@ function buildDashboard() {
           <div class="group-dot" style="background:${color}"></div>
           <div class="group-info">
             <div class="group-name">${gname}</div>
-            <div class="group-stat">เข้างาน ${gs.checkin}/${gs.total} คน • ออกงาน ${gs.checkout} คน</div>
+            <div class="group-stat">เช็คอิน ${gs.checkin}/${gs.total} • ทำงานอยู่ ${Math.max(0,gs.checkin-gs.checkout)} • เช็คเอาท์ ${gs.checkout}</div>
           </div>
           <div class="group-progress">
             <div class="progress-bar"><div class="progress-fill" style="width:${pct(gs.checkin,gs.total)}%;background:${color}"></div></div>
@@ -1012,7 +1010,7 @@ function buildDashboard() {
 
   const missingBlock = d.missingNames&&d.missingNames.length>0?`
     <div class="card full">
-      <div class="card-hd"><span class="card-hd-icon">⚠️</span><span class="card-hd-title">ยังไม่ได้ลงชื่อ (${d.missingNames.length} คน)</span></div>
+      <div class="card-hd"><span class="card-hd-icon">⚠️</span><span class="card-hd-title">ยังไม่ได้เช็คอิน (${d.missingNames.length} คน)</span></div>
       <div class="card-body">${d.missingNames.map(m=>`<span class="missing-tag">👤 ${m.name}</span>`).join('')}</div>
     </div>`:
     `<div class="card full" style="text-align:center;padding:20px">
