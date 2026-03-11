@@ -1,1 +1,987 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ระบบลงชื่อ WFH — กองแผนงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:  #0f2d5e;
+  --blue:  #1a4b8c;
+  --sky:   #2e7dc9;
+  --light: #5ba3e8;
+  --gold:  #c9a227;
+  --green: #1a7a4a;
+  --lg:    #22a865;
+  --red:   #c0392b;
+  --orange:#d4782a;
+  --bg:    #f0f4fa;
+  --card:  #ffffff;
+  --text:  #1a2a3a;
+  --muted: #6b7c93;
+  --border:#d0ddf0;
+  --shadow: 0 2px 16px rgba(15,45,94,0.10);
+  --radius: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+button { font-family: 'Sarabun', sans-serif; cursor: pointer; border: none; outline: none; }
+select, input, textarea { font-family: 'Sarabun', sans-serif; outline: none; }
 
+/* ── Layout ── */
+#app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+  color: #fff; padding: 16px 20px 14px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(15,45,94,0.3);
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; }
+.header-logo { display: flex; align-items: center; gap: 10px; }
+.header-logo .icon { font-size: 22px; }
+.header-title { font-size: 13px; font-weight: 800; line-height: 1.3; }
+.header-sub { font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.header-date { font-size: 10px; color: rgba(255,255,255,0.8); text-align: right; line-height: 1.5; }
+.nav-tabs { display: flex; gap: 4px; margin-top: 12px; }
+.nav-tab {
+  flex: 1; padding: 7px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+  border: 1.5px solid transparent; transition: all 0.2s;
+}
+.nav-tab.active { background: rgba(255,255,255,0.95); color: var(--navy); }
+
+.content { flex: 1; padding: 16px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); margin-bottom: 14px;
+  border: 1.5px solid var(--border); overflow: hidden;
+}
+.card-header {
+  padding: 13px 16px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1.5px solid var(--border);
+  background: linear-gradient(to right, #f8faff, #fff);
+}
+.card-header-icon { font-size: 18px; }
+.card-header-title { font-size: 14px; font-weight: 700; color: var(--navy); }
+.card-header-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; color: #fff;
+}
+.card-body { padding: 16px; }
+
+/* ── Form ── */
+.form-mode-banner {
+  text-align: center; padding: 14px 16px; margin-bottom: 16px;
+  border-radius: var(--radius); font-weight: 700; font-size: 15px;
+}
+.form-mode-banner.checkin  { background: #e8f5ee; color: var(--green); border: 2px solid #b8e8cb; }
+.form-mode-banner.checkout { background: #fff3e0; color: var(--orange); border: 2px solid #ffe0b2; }
+.form-mode-banner.closed   { background: #f0f4fa; color: var(--muted); border: 2px solid var(--border); }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.field label span { color: var(--red); }
+.field select, .field input, .field textarea {
+  width: 100%; padding: 11px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); font-size: 14px; color: var(--text);
+  background: #fafcff; transition: border-color 0.2s;
+}
+.field select:focus, .field input:focus, .field textarea:focus { border-color: var(--sky); background: #fff; }
+.field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+.radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.radio-btn {
+  padding: 10px 8px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: #fafcff; text-align: center; font-size: 12px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all 0.2s;
+}
+.radio-btn.selected { border-color: var(--sky); background: #e8f3fd; color: var(--blue); }
+.radio-btn .emoji { font-size: 18px; display: block; margin-bottom: 3px; }
+
+.plan-input { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+.plan-num {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--sky);
+  color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; margin-top: 11px;
+}
+.plan-input input { flex: 1; }
+
+.btn-primary {
+  width: 100%; padding: 15px; border-radius: 12px; font-size: 15px; font-weight: 700;
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+  color: #fff; box-shadow: 0 4px 14px rgba(15,45,94,0.3); transition: all 0.2s;
+  margin-top: 8px;
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary {
+  padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  background: var(--bg); color: var(--navy); border: 1.5px solid var(--border);
+}
+
+/* ── Success Screen ── */
+.success-screen { text-align: center; padding: 32px 16px; }
+.success-icon { font-size: 56px; margin-bottom: 12px; display: block; }
+.success-title { font-size: 20px; font-weight: 800; color: var(--green); margin-bottom: 6px; }
+.success-sub { font-size: 13px; color: var(--muted); }
+.success-time { font-size: 28px; font-weight: 800; color: var(--navy); margin: 12px 0; }
+
+/* ── Dashboard ── */
+.filter-bar {
+  background: var(--card); border-radius: var(--radius); padding: 12px;
+  margin-bottom: 14px; box-shadow: var(--shadow); border: 1.5px solid var(--border);
+}
+.filter-bar label { font-size: 11px; font-weight: 700; color: var(--navy); display: block; margin-bottom: 4px; }
+.filter-bar select {
+  width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+  font-size: 13px; background: #fafcff; color: var(--text); margin-bottom: 8px;
+}
+.filter-bar select:last-child { margin-bottom: 0; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+.kpi-card {
+  border-radius: 12px; padding: 10px 6px; text-align: center;
+  border: 1.5px solid; animation: fadeUp 0.4s ease both;
+}
+.kpi-icon { font-size: 20px; }
+.kpi-val  { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.kpi-label{ font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+.group-list { }
+.group-row {
+  background: var(--card); border-radius: 12px; padding: 13px 16px;
+  margin-bottom: 8px; border: 1.5px solid var(--border); box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  transition: all 0.2s; animation: fadeUp 0.4s ease both;
+}
+.group-row:active { transform: scale(0.98); }
+.group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.group-info { flex: 1; min-width: 0; }
+.group-name { font-size: 12.5px; font-weight: 700; color: var(--navy); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-stat { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.group-progress { width: 60px; flex-shrink: 0; }
+.progress-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.progress-pct { font-size: 10px; font-weight: 700; text-align: right; margin-top: 3px; }
+.group-arrow { color: var(--muted); font-size: 14px; }
+
+/* ── Missing Badge ── */
+.missing-section { margin-bottom: 14px; }
+.missing-header { font-size: 12px; font-weight: 700; color: var(--red); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.missing-tag {
+  display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #ffeaea; color: var(--red); border: 1px solid #ffcfcf; margin: 3px;
+}
+
+/* ── Group Detail ── */
+.back-btn { display: flex; align-items: center; gap: 6px; color: var(--navy); font-size: 13px; font-weight: 700; margin-bottom: 14px; cursor: pointer; }
+.person-card {
+  background: var(--card); border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 8px; border: 1.5px solid var(--border); box-shadow: var(--shadow);
+  animation: fadeUp 0.3s ease both;
+}
+.person-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.person-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+.person-type { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; background: #e8f0fd; color: var(--blue); }
+.time-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.time-chip {
+  flex: 1; padding: 7px; border-radius: 8px; text-align: center; font-size: 11px; font-weight: 700;
+}
+.time-chip.in  { background: #e8f5ee; color: var(--green); }
+.time-chip.out { background: #fff3e0; color: var(--orange); }
+.time-chip.missing { background: #ffeaea; color: var(--red); }
+.time-chip .t-label { font-size: 9px; font-weight: 500; opacity: 0.8; display: block; }
+.plans-section { font-size: 11.5px; color: var(--text); line-height: 1.6; }
+.plans-label { font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.plan-item { padding: 3px 0; padding-left: 12px; position: relative; }
+.plan-item::before { content: '•'; position: absolute; left: 0; color: var(--sky); }
+
+/* ── Loading ── */
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 14px; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--sky); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.loading-text { font-size: 13px; color: var(--muted); font-weight: 600; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.day-tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; margin-bottom: 8px; }
+.day-wfh     { background: #e8f0fd; color: var(--blue); }
+.day-office  { background: #e8f5ee; color: var(--green); }
+.day-field   { background: #fff3e0; color: var(--orange); }
+.day-leave   { background: #f5e8fd; color: #7b2d9e; }
+
+.empty-state { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px; }
+.empty-state .emoji { font-size: 36px; display: block; margin-bottom: 10px; }
+
+/* ── Work Type Checklist ── */
+.checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.check-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: #fafcff;
+  cursor: pointer; transition: all 0.18s; user-select: none;
+}
+.check-item.checked { border-color: var(--sky); background: #e8f3fd; }
+.check-item .check-box {
+  width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.18s; font-size: 11px;
+  background: #fff;
+}
+.check-item.checked .check-box { background: var(--sky); border-color: var(--sky); color: #fff; }
+.check-item .check-label { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+.check-item.checked .check-label { color: var(--navy); }
+.check-item .check-icon { font-size: 15px; flex-shrink: 0; }
+.check-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; min-height: 24px; }
+.check-tag {
+  font-size: 10.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  background: var(--sky); color: #fff;
+}
+
+/* ── Signature Pad ── */
+.sig-wrap {
+  border: 2px dashed var(--border); border-radius: 12px;
+  background: #fafcff; position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.sig-wrap.has-sig { border-color: var(--sky); border-style: solid; }
+.sig-wrap canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+.sig-placeholder {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none;
+  color: var(--muted); font-size: 12px; gap: 6px; transition: opacity 0.2s;
+}
+.sig-placeholder .sig-icon { font-size: 28px; opacity: 0.4; }
+.sig-placeholder.hidden { opacity: 0; }
+.sig-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-top: 1.5px solid var(--border);
+  background: #f4f7fb;
+}
+.sig-toolbar-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+.sig-clear {
+  font-size: 11px; font-weight: 700; color: var(--red);
+  background: #ffeaea; border: 1px solid #ffcfcf;
+  padding: 4px 12px; border-radius: 20px;
+}
+
+/* ── Desktop ── */
+@media (min-width: 480px) {
+  #app { box-shadow: 0 0 40px rgba(15,45,94,0.12); }
+  body { background: #dce5f5; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIG — แก้ตรงนี้เท่านั้น
+// ══════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let state = {
+  view: 'loading',         // loading | form | dashboard | detail | success
+  formMode: 'closed',      // checkin | checkout | closed
+  employees: [],
+  groups: [],
+  selectedGroup: 'ทั้งหมด',
+  selectedDate: todayStr(),
+  detailGroup: null,
+  dashboard: null,
+  groupDetail: null,
+  submitting: false,
+  submittedAt: null,
+  error: null,
+  // form state
+  form: {
+    group: '', name: '', empType: '', dayType: 'WFH',
+    plan1: '', plan2: '', plan3: '',
+    summary1: '', summary2: '', summary3: '',
+    signature: '',
+    workTypes: [],
+  },
+};
+
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function thaiDate(dateStr) {
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const days   = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+function pct(a, b) { return b === 0 ? 0 : Math.round(a / b * 100); }
+function dotColor(ratio) {
+  if (ratio >= 1) return 'var(--lg)';
+  if (ratio > 0.5) return 'var(--gold)';
+  return 'var(--red)';
+}
+function dayTagClass(type) {
+  if (!type) return '';
+  if (type.includes('WFH') || type.includes('บ้าน')) return 'day-wfh';
+  if (type.includes('ออฟฟิศ')) return 'day-office';
+  if (type.includes('พื้นที่')) return 'day-field';
+  if (type.includes('ลา')) return 'day-leave';
+  return 'day-wfh';
+}
+
+async function api(params) {
+  const url = API_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER ENGINE
+// ══════════════════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = buildApp();
+  bindEvents();
+}
+
+function buildApp() {
+  return `
+    ${buildHeader()}
+    <div class="content">
+      ${buildContent()}
+    </div>
+  `;
+}
+
+function buildHeader() {
+  const now = new Date();
+  const hm  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
+  const tab = (label, view, icon) => `
+    <button class="nav-tab ${state.view === view || (view === 'form' && state.view === 'success') ? 'active' : ''}"
+      onclick="switchView('${view}')">
+      ${icon} ${label}
+    </button>`;
+
+  return `
+  <div class="header">
+    <div class="header-top">
+      <div class="header-logo">
+        <span class="icon">🏛️</span>
+        <div>
+          <div class="header-title">ระบบลงชื่อ WFH</div>
+          <div class="header-sub">กองแผนงาน • กรมทางหลวงชนบท</div>
+        </div>
+      </div>
+      <div class="header-date">
+        <div>${thaiDate(todayStr())}</div>
+        <div>${hm}</div>
+      </div>
+    </div>
+    ${state.view !== 'loading' ? `
+    <div class="nav-tabs">
+      ${tab('ลงชื่อ','form','📝')}
+      ${tab('Dashboard','dashboard','📊')}
+    </div>` : ''}
+  </div>`;
+}
+
+function buildContent() {
+  switch (state.view) {
+    case 'loading':   return buildLoading();
+    case 'form':      return buildForm();
+    case 'success':   return buildSuccess();
+    case 'dashboard': return buildDashboard();
+    case 'detail':    return buildDetail();
+    default:          return buildLoading();
+  }
+}
+
+// ── Loading ──────────────────────────────────────
+function buildLoading() {
+  return `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">กำลังโหลดข้อมูล...</div>
+    </div>`;
+}
+
+// ── Form ─────────────────────────────────────────
+function buildForm() {
+  const { formMode, form, employees, groups } = state;
+
+  const bannerConfig = {
+    checkin:  { icon: '🌅', text: 'ลงชื่อเข้างาน', desc: 'กรอกแผนงานที่จะทำวันนี้', cls: 'checkin' },
+    checkout: { icon: '🌆', text: 'ลงชื่อออกงาน',  desc: 'กรอกสรุปงานที่ทำเสร็จวันนี้', cls: 'checkout' },
+    closed:   { icon: '🔒', text: 'ไม่อยู่ในช่วงเวลาลงชื่อ', desc: 'เปิด 06.00–09.30 น. และ 15.00–18.00 น.', cls: 'closed' },
+  };
+  const banner = bannerConfig[formMode] || bannerConfig.closed;
+
+  if (formMode === 'closed') {
+    return `
+      <div class="form-mode-banner closed">${banner.icon} ${banner.text}<br><small>${banner.desc}</small></div>
+      <div class="empty-state"><span class="emoji">⏰</span>กรุณารอจนถึงช่วงเวลาลงชื่อ<br>หรือดู Dashboard ได้เลย</div>`;
+  }
+
+  const empOptions = employees
+    .filter(e => !form.group || e.group === form.group)
+    .map(e => `<option value="${e.name}" data-type="${e.type}">${e.name}</option>`)
+    .join('');
+
+  const WORK_TYPES = [
+    { v:'งานนโยบาย',        icon:'📌' },
+    { v:'งานประสานงาน',     icon:'🤝' },
+    { v:'งานสารบรรณ',       icon:'📄' },
+    { v:'ประชุมออนไลน์',    icon:'💻' },
+    { v:'งานวิเคราะห์/วิจัย',icon:'🔍' },
+    { v:'งานแผนงบประมาณ',   icon:'💰' },
+    { v:'ลงพื้นที่/สำรวจ',  icon:'🚗' },
+    { v:'งานอื่นๆ',          icon:'📋' },
+  ];
+
+  const workTypeField = `
+    <div class="field" style="margin-bottom:16px">
+      <label>🗂️ ประเภทงานวันนี้ <span>*</span> <span style="font-weight:400;color:var(--muted)">(เลือกได้หลายข้อ)</span></label>
+      <div class="checklist-grid">
+        ${WORK_TYPES.map(t => `
+          <div class="check-item ${(form.workTypes||[]).includes(t.v)?'checked':''}"
+               onclick="toggleWorkType('${t.v}')">
+            <span class="check-icon">${t.icon}</span>
+            <span class="check-label">${t.v}</span>
+            <span class="check-box" style="margin-left:auto">${(form.workTypes||[]).includes(t.v)?'✓':''}</span>
+          </div>`).join('')}
+      </div>
+      ${(form.workTypes||[]).length > 0 ? `
+        <div class="check-tags">
+          ${(form.workTypes||[]).map(t => `<span class="check-tag">${t}</span>`).join('')}
+        </div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px">ยังไม่ได้เลือก</div>`}
+    </div>`;
+
+  const planFields = formMode === 'checkin' ? `
+    ${workTypeField}
+    <div class="field">
+      <label>📋 แผนงานวันนี้ <span>*</span></label>
+      ${[1,2,3].map(i => `
+        <div class="plan-input">
+          <span class="plan-num">${i}</span>
+          <input type="text" id="plan${i}" placeholder="${i===1?'งานหลัก (จำเป็น)':'งานเพิ่มเติม (ถ้ามี)'}" value="${form['plan'+i]||''}">
+        </div>`).join('')}
+    </div>` : `
+    ${workTypeField}
+    <div class="field">
+      <label>📝 สรุปงานที่ทำเสร็จ <span>*</span></label>
+      ${[1,2,3].map(i => `
+        <div class="plan-input">
+          <span class="plan-num" style="background:var(--orange)">${i}</span>
+          <input type="text" id="summary${i}" placeholder="${i===1?'งานที่เสร็จ (จำเป็น)':'งานอื่น (ถ้ามี)'}" value="${form['summary'+i]||''}">
+        </div>`).join('')}
+    </div>`;
+
+  return `
+    <div class="form-mode-banner ${banner.cls}">${banner.icon} ${banner.text}<br><small style="font-weight:500;font-size:12px">${banner.desc}</small></div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon">👤</span>
+        <span class="card-header-title">ข้อมูลส่วนตัว</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>🏢 กลุ่มงาน <span>*</span></label>
+          <select id="f-group">
+            <option value="">— เลือกกลุ่ม —</option>
+            ${groups.map(g => `<option value="${g}" ${form.group===g?'selected':''}>${g}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>👤 ชื่อ-นามสกุล <span>*</span></label>
+          <select id="f-name">
+            <option value="">— เลือกชื่อ —</option>
+            ${empOptions}
+          </select>
+        </div>
+        <div class="field">
+          <label>🏷️ ประเภทวัน <span>*</span></label>
+          <div class="radio-group">
+            ${[
+              {v:'WFH',e:'🏠',l:'Work from Home'},
+              {v:'ออฟฟิศ',e:'🏢',l:'มาออฟฟิศ'},
+              {v:'ลงพื้นที่',e:'🚗',l:'ลงพื้นที่'},
+              {v:'ลา',e:'🏖️',l:'วันลา'},
+            ].map(({v,e,l}) =>
+              `<div class="radio-btn ${form.dayType===v?'selected':''}" onclick="setDayType('${v}')">
+                <span class="emoji">${e}</span>${l}
+              </div>`
+            ).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon">${formMode==='checkin'?'📋':'📝'}</span>
+        <span class="card-header-title">${formMode==='checkin'?'แผนงานวันนี้':'สรุปผลการทำงาน'}</span>
+      </div>
+      <div class="card-body">
+        ${planFields}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon">✍️</span>
+        <span class="card-header-title">ลายมือชื่อ</span>
+        <span class="card-header-badge" style="background:var(--gold)">จำเป็น</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>✍️ เซ็นชื่อในช่องด้านล่าง <span>*</span></label>
+          <div class="sig-wrap" id="sig-wrap">
+            <canvas id="sig-canvas" height="130"></canvas>
+            <div class="sig-placeholder" id="sig-placeholder">
+              <span class="sig-icon">✍️</span>
+              <span>ลากนิ้วหรือเมาส์เพื่อเซ็นชื่อ</span>
+            </div>
+            <div class="sig-toolbar">
+              <span class="sig-toolbar-label">🖊️ ลายมือชื่อผู้ปฏิบัติงาน</span>
+              <button class="sig-clear" onclick="clearSignature()">ล้างใหม่</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${state.error ? `<div style="color:var(--red);font-size:12px;text-align:center;margin-bottom:10px">⚠️ ${state.error}</div>` : ''}
+    <button class="btn-primary" id="btn-submit" ${state.submitting?'disabled':''}>
+      ${state.submitting ? '⏳ กำลังบันทึก...' : (formMode==='checkin' ? '✅ ลงชื่อเข้างาน' : '🌆 ลงชื่อออกงาน')}
+    </button>`;
+}
+
+// ── Success ───────────────────────────────────────
+function buildSuccess() {
+  const { formMode, submittedAt } = state;
+  const isIn = formMode === 'checkin';
+  return `
+    <div class="success-screen">
+      <span class="success-icon">${isIn ? '✅' : '🎉'}</span>
+      <div class="success-title">${isIn ? 'ลงชื่อเข้างานสำเร็จ' : 'ลงชื่อออกงานสำเร็จ'}</div>
+      <div class="success-time">${submittedAt}</div>
+      <div class="success-sub">ข้อมูลถูกบันทึกลง Google Sheet แล้ว<br>และแจ้งหัวหน้าผ่าน Line แล้ว</div>
+      <div style="margin-top:24px">
+        <button class="btn-secondary" onclick="switchView('dashboard')">📊 ดู Dashboard</button>
+      </div>
+    </div>`;
+}
+
+// ── Dashboard ─────────────────────────────────────
+function buildDashboard() {
+  const { dashboard, selectedGroup, selectedDate, groups } = state;
+
+  const filters = `
+    <div class="filter-bar">
+      <label>📅 วันที่</label>
+      <input type="date" id="f-date" value="${selectedDate}" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:#fafcff;margin-bottom:8px">
+      <label>🏢 กลุ่มงาน</label>
+      <select id="f-dash-group">
+        <option value="ทั้งหมด" ${selectedGroup==='ทั้งหมด'?'selected':''}>— ทุกกลุ่ม —</option>
+        ${groups.map(g => `<option value="${g}" ${selectedGroup===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+    </div>`;
+
+  if (!dashboard) return filters + buildLoading();
+
+  const d = dashboard;
+  const kpis = [
+    { icon:'✅', val: d.checkin,  label:'Check-in', color:'var(--lg)',     border:'#b8e8cb', bg:'#e8f5ee' },
+    { icon:'⏳', val: d.missing,  label:'รอลงชื่อ',  color:'var(--red)',    border:'#ffcfcf', bg:'#ffeaea' },
+    { icon:'🌆', val: d.checkout, label:'Check-out', color:'var(--orange)', border:'#ffe0b2', bg:'#fff3e0' },
+    { icon:'👥', val: d.total,    label:'ทั้งหมด',   color:'var(--navy)',   border:'var(--border)', bg:'#f0f4fa' },
+  ];
+
+  const kpiGrid = `
+    <div class="kpi-grid">
+      ${kpis.map(k => `
+        <div class="kpi-card" style="background:${k.bg};border-color:${k.border}">
+          <div class="kpi-icon">${k.icon}</div>
+          <div class="kpi-val" style="color:${k.color}">${k.val}</div>
+          <div class="kpi-label">${k.label}</div>
+        </div>`).join('')}
+    </div>`;
+
+  const groupRows = Object.entries(d.groupSummary)
+    .filter(([, gs]) => gs.total > 0)
+    .map(([gname, gs], idx) => {
+      const ratio = gs.total > 0 ? gs.checkin / gs.total : 0;
+      const color = dotColor(ratio);
+      return `
+        <div class="group-row" onclick="showDetail('${gname}')" style="animation-delay:${idx*0.05}s">
+          <div class="group-dot" style="background:${color}"></div>
+          <div class="group-info">
+            <div class="group-name">${gname}</div>
+            <div class="group-stat">เข้างาน ${gs.checkin}/${gs.total} • ออกงาน ${gs.checkout}</div>
+          </div>
+          <div class="group-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${pct(gs.checkin,gs.total)}%;background:${color}"></div>
+            </div>
+            <div class="progress-pct" style="color:${color}">${pct(gs.checkin,gs.total)}%</div>
+          </div>
+          <span class="group-arrow">›</span>
+        </div>`;
+    }).join('');
+
+  const missingBlock = d.missingNames && d.missingNames.length > 0 ? `
+    <div class="missing-section card" style="padding:14px 16px">
+      <div class="missing-header">⚠️ ยังไม่ได้ลงชื่อ (${d.missingNames.length} คน)</div>
+      <div>${d.missingNames.map(m => `<span class="missing-tag">${m.name}</span>`).join('')}</div>
+    </div>` : '';
+
+  return `${filters}${kpiGrid}<div class="group-list">${groupRows}</div>${missingBlock}`;
+}
+
+// ── Group Detail ──────────────────────────────────
+function buildDetail() {
+  const { groupDetail } = state;
+  if (!groupDetail) return buildLoading();
+
+  const { group, employees, records, date } = groupDetail;
+
+  const cards = employees.map((emp, idx) => {
+    const rec = records[emp.name] || {};
+    const hasIn  = !!rec.checkinTime;
+    const hasOut = !!rec.checkoutTime;
+
+    return `
+      <div class="person-card" style="animation-delay:${idx*0.06}s">
+        <div class="person-header">
+          <div class="person-name">${emp.name}</div>
+          <div class="person-type">${emp.type}</div>
+        </div>
+        ${rec.dayType ? `<span class="day-tag ${dayTagClass(rec.dayType)}">📍 ${rec.dayType}</span>` : ''}
+        <div class="time-row">
+          <div class="time-chip ${hasIn?'in':'missing'}">
+            <span class="t-label">เข้างาน</span>
+            ${hasIn ? rec.checkinTime+' น.' : '—'}
+          </div>
+          <div class="time-chip ${hasOut?'out':'missing'}">
+            <span class="t-label">ออกงาน</span>
+            ${hasOut ? rec.checkoutTime+' น.' : '—'}
+          </div>
+        </div>
+        ${hasIn && rec.plans && rec.plans.length ? `
+          <div class="plans-section">
+            <div class="plans-label">📋 แผนงาน</div>
+            ${rec.plans.map(p => `<div class="plan-item">${p}</div>`).join('')}
+          </div>` : ''}
+        ${hasOut && rec.summaries && rec.summaries.length ? `
+          <div class="plans-section" style="margin-top:8px">
+            <div class="plans-label">✅ สรุปงาน</div>
+            ${rec.summaries.map(s => `<div class="plan-item">${s}</div>`).join('')}
+          </div>` : ''}
+        ${!hasIn ? `<div style="color:var(--red);font-size:11px;font-weight:600">❌ ยังไม่ได้ลงชื่อ</div>` : ''}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="back-btn" onclick="goBack()">‹ กลับ Dashboard</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <span class="card-header-icon">🏢</span>
+        <span class="card-header-title">${group}</span>
+        <span class="card-header-badge" style="background:var(--navy)">${thaiDate(date)}</span>
+      </div>
+    </div>
+    ${cards || `<div class="empty-state"><span class="emoji">👥</span>ไม่มีข้อมูล</div>`}`;
+}
+
+// ══════════════════════════════════════════════════
+//  EVENT BINDING
+// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+//  SIGNATURE PAD
+// ══════════════════════════════════════════════════
+let sigDrawing = false, sigLastX = 0, sigLastY = 0;
+
+function initSignaturePad() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  canvas.width = canvas.offsetWidth;
+
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#0f2d5e';
+  ctx.lineWidth   = 2.2;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const src  = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * (canvas.width / rect.width),
+             y: (src.clientY - rect.top)  * (canvas.height / rect.height) };
+  }
+  function start(e) {
+    e.preventDefault();
+    sigDrawing = true;
+    const p = getPos(e);
+    sigLastX = p.x; sigLastY = p.y;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    document.getElementById('sig-placeholder')?.classList.add('hidden');
+    wrap.classList.add('has-sig');
+  }
+  function move(e) {
+    if (!sigDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    sigLastX = p.x; sigLastY = p.y;
+  }
+  function end(e) {
+    sigDrawing = false;
+    state.form.signature = canvas.toDataURL('image/png');
+  }
+
+  canvas.addEventListener('mousedown',  start, { passive: false });
+  canvas.addEventListener('mousemove',  move,  { passive: false });
+  canvas.addEventListener('mouseup',    end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove',  move,  { passive: false });
+  canvas.addEventListener('touchend',   end);
+
+  // Restore existing signature if any
+  if (state.form.signature) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = state.form.signature;
+    wrap.classList.add('has-sig');
+    document.getElementById('sig-placeholder')?.classList.add('hidden');
+  }
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  state.form.signature = '';
+  document.getElementById('sig-wrap')?.classList.remove('has-sig');
+  document.getElementById('sig-placeholder')?.classList.remove('hidden');
+}
+
+function bindEvents() {
+  // Group select → reload employee list
+  const fg = document.getElementById('f-group');
+  if (fg) fg.addEventListener('change', e => {
+    state.form.group = e.target.value;
+    state.form.name  = '';
+    render();
+  });
+
+  // Name select → record type
+  const fn = document.getElementById('f-name');
+  if (fn) fn.addEventListener('change', e => { state.form.name = e.target.value; });
+
+  // Submit form
+  const bs = document.getElementById('btn-submit');
+  if (bs) bs.addEventListener('click', handleSubmit);
+
+  // Init signature pad after DOM ready
+  setTimeout(initSignaturePad, 50);
+
+  // Dashboard filters
+  const fd = document.getElementById('f-date');
+  if (fd) fd.addEventListener('change', e => {
+    state.selectedDate = e.target.value;
+    state.dashboard    = null;
+    render();
+    loadDashboard();
+  });
+
+  const fdg = document.getElementById('f-dash-group');
+  if (fdg) fdg.addEventListener('change', e => {
+    state.selectedGroup = e.target.value;
+    state.dashboard     = null;
+    render();
+    loadDashboard();
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════════════
+function setDayType(val) {
+  state.form.dayType = val;
+  render();
+}
+
+function toggleWorkType(val) {
+  const wt = state.form.workTypes || [];
+  const idx = wt.indexOf(val);
+  if (idx === -1) wt.push(val);
+  else wt.splice(idx, 1);
+  state.form.workTypes = wt;
+  // Re-render only checklist area to avoid losing sig canvas
+  const grid = document.querySelector('.checklist-grid');
+  const tags = document.querySelector('.check-tags') || document.querySelector('[style*="ยังไม่ได้เลือก"]');
+  if (grid) {
+    const WORK_TYPES = [
+      { v:'งานนโยบาย',icon:'📌' },{ v:'งานประสานงาน',icon:'🤝' },
+      { v:'งานสารบรรณ',icon:'📄' },{ v:'ประชุมออนไลน์',icon:'💻' },
+      { v:'งานวิเคราะห์/วิจัย',icon:'🔍' },{ v:'งานแผนงบประมาณ',icon:'💰' },
+      { v:'ลงพื้นที่/สำรวจ',icon:'🚗' },{ v:'งานอื่นๆ',icon:'📋' },
+    ];
+    grid.innerHTML = WORK_TYPES.map(t => `
+      <div class="check-item ${wt.includes(t.v)?'checked':''}" onclick="toggleWorkType('${t.v}')">
+        <span class="check-icon">${t.icon}</span>
+        <span class="check-label">${t.v}</span>
+        <span class="check-box" style="margin-left:auto">${wt.includes(t.v)?'✓':''}</span>
+      </div>`).join('');
+    // update tags row
+    const tagsParent = grid.parentElement;
+    let tagsEl = tagsParent.querySelector('.check-tags') || tagsParent.querySelector('.no-tags');
+    if (!tagsEl) { tagsEl = document.createElement('div'); tagsParent.appendChild(tagsEl); }
+    if (wt.length > 0) {
+      tagsEl.className = 'check-tags';
+      tagsEl.innerHTML = wt.map(t => `<span class="check-tag">${t}</span>`).join('');
+    } else {
+      tagsEl.className = 'no-tags';
+      tagsEl.style = 'font-size:11px;color:var(--muted);margin-top:6px';
+      tagsEl.textContent = 'ยังไม่ได้เลือก';
+    }
+  }
+}
+
+function switchView(view) {
+  state.view  = view;
+  state.error = null;
+  if (view === 'dashboard') { state.dashboard = null; render(); loadDashboard(); }
+  else render();
+}
+
+function showDetail(group) {
+  state.view        = 'detail';
+  state.detailGroup = group;
+  state.groupDetail = null;
+  render();
+  loadGroupDetail(group);
+}
+
+function goBack() {
+  state.view = 'dashboard';
+  if (!state.dashboard) { loadDashboard(); } else render();
+}
+
+async function handleSubmit() {
+  const { formMode } = state;
+  const f = state.form;
+
+  // Collect from DOM
+  const grpEl = document.getElementById('f-group');
+  const nmEl  = document.getElementById('f-name');
+  if (grpEl) f.group = grpEl.value;
+  if (nmEl)  f.name  = nmEl.value;
+
+  if (formMode === 'checkin') {
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById('plan'+i);
+      if (el) f['plan'+i] = el.value;
+    }
+  } else {
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById('summary'+i);
+      if (el) f['summary'+i] = el.value;
+    }
+  }
+
+  // Validate
+  if (!f.group) { state.error = 'กรุณาเลือกกลุ่มงาน'; render(); return; }
+  if (!f.name)  { state.error = 'กรุณาเลือกชื่อ'; render(); return; }
+  if (formMode === 'checkin'  && !f.plan1)    { state.error = 'กรุณากรอกแผนงานอย่างน้อย 1 ข้อ'; render(); return; }
+  if (formMode === 'checkout' && !f.summary1) { state.error = 'กรุณากรอกสรุปงานอย่างน้อย 1 ข้อ'; render(); return; }
+  if (!f.workTypes || f.workTypes.length === 0) { state.error = 'กรุณาเลือกประเภทงานอย่างน้อย 1 ประเภท'; render(); return; }
+  if (!f.signature) { state.error = 'กรุณาเซ็นลายมือชื่อก่อนยืนยัน'; render(); setTimeout(initSignaturePad,50); return; }
+
+  state.submitting = true;
+  state.error      = null;
+  render();
+
+  try {
+    const action = formMode === 'checkin' ? 'submitCheckin' : 'submitCheckout';
+    const params = { action, ...f, workTypes: (f.workTypes||[]).join(',') };
+    const result = await api(params);
+
+    if (result.success) {
+      state.view        = 'success';
+      state.submittedAt = result.time;
+      state.submitting  = false;
+    } else {
+      state.error      = result.message || 'เกิดข้อผิดพลาด';
+      state.submitting = false;
+    }
+  } catch (err) {
+    state.error      = 'ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่';
+    state.submitting = false;
+  }
+  render();
+}
+
+// ══════════════════════════════════════════════════
+//  DATA LOADERS
+// ══════════════════════════════════════════════════
+async function loadInit() {
+  try {
+    const [empRes, fmRes] = await Promise.all([
+      api({ action: 'getEmployees' }),
+      api({ action: 'getFormStatus' }),
+    ]);
+    state.employees = empRes.employees || [];
+    state.groups    = empRes.groups    || [];
+    state.formMode  = fmRes.mode       || 'closed';
+    state.view      = 'form';
+  } catch (err) {
+    state.view  = 'form';
+    state.error = 'โหลดข้อมูลไม่สำเร็จ — ตรวจสอบ API URL';
+  }
+  render();
+}
+
+async function loadDashboard() {
+  try {
+    const result = await api({
+      action: 'getDashboard',
+      date:   state.selectedDate,
+      group:  state.selectedGroup,
+    });
+    state.dashboard = result;
+  } catch (err) {
+    state.dashboard = { error: 'โหลดไม่สำเร็จ' };
+  }
+  if (state.view === 'dashboard') render();
+}
+
+async function loadGroupDetail(group) {
+  try {
+    const result = await api({
+      action: 'getGroupDetail',
+      date:   state.selectedDate,
+      group,
+    });
+    state.groupDetail = result;
+  } catch (err) {
+    state.groupDetail = { error: true };
+  }
+  if (state.view === 'detail') render();
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+render();
+loadInit();
+</script>
+</body>
+</html>
