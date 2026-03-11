@@ -144,6 +144,23 @@ a { text-decoration: none; }
 .card-body { padding: 18px; }
 
 /* ════════════════════════════════════════════
+   STATUS BANNER
+════════════════════════════════════════════ */
+.status-banner {
+  border-radius: 12px; padding: 13px 16px; margin-bottom: 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+  animation: fadeUp 0.3s ease;
+}
+.status-banner.done-in   { background: #e6f9f0; border: 2px solid #a8e8c4; }
+.status-banner.done-out  { background: #fff5ea; border: 2px solid #ffd0a0; }
+.status-banner.done-both { background: #f0eaff; border: 2px solid #c4a8f0; }
+.status-banner.checking  { background: #f0f4fa; border: 2px dashed var(--border); }
+.status-icon  { font-size: 26px; flex-shrink: 0; }
+.status-title { font-size: 14px; font-weight: 800; }
+.status-sub   { font-size: 12px; margin-top: 3px; line-height: 1.5; color: var(--muted); }
+.status-time  { font-size: 20px; font-weight: 800; color: var(--navy); }
+
+/* ════════════════════════════════════════════
    FORM ELEMENTS
 ════════════════════════════════════════════ */
 .form-mode-banner {
@@ -495,7 +512,7 @@ a { text-decoration: none; }
 </nav>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbzIieLlYkU_CreZuvsKBy5UYPeDWJfQwTV8ukBI3j__1OC2_3kkNGPhKTZl0ZEnzra0uQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzl32xJDQLINSNil4WuoCSqcU9CqRnX88_waifNHoPkO4ckenVacS1t7-rZDPDYct7mZQ/exec';
 
 /* ════════════════════════════════════════════
    STATE
@@ -520,6 +537,8 @@ let S = {
     summary1:'', summary2:'', summary3:'',
     workTypes:[], signature:'',
   },
+  statusChecking: false,
+  todayStatus: null,   // null | { checkedIn, checkedOut, checkinTime, checkoutTime }
 };
 
 /* ════════════════════════════════════════════
@@ -673,6 +692,84 @@ function buildLoading() {
 /* ════════════════════════════════════════════
    FORM
 ════════════════════════════════════════════ */
+function buildStatusBanner() {
+  const {statusChecking, todayStatus, formMode} = S;
+  if(!S.form.name) return '';
+  if(statusChecking) return `
+    <div class="status-banner checking">
+      <span class="status-icon">⏳</span>
+      <div><div class="status-title" style="color:var(--muted)">กำลังตรวจสอบสถานะ...</div></div>
+    </div>`;
+  if(!todayStatus) return '';
+
+  const {checkedIn, checkedOut, checkinTime, checkoutTime} = todayStatus;
+
+  // ลงทั้งเข้าและออกแล้ว
+  if(checkedIn && checkedOut) return `
+    <div class="status-banner done-both">
+      <span class="status-icon">✅</span>
+      <div>
+        <div class="status-title" style="color:var(--purple)">ลงชื่อครบแล้ววันนี้</div>
+        <div class="status-sub">
+          🌅 เข้างาน <strong>${checkinTime} น.</strong> &nbsp;|&nbsp;
+          🌆 ออกงาน <strong>${checkoutTime} น.</strong>
+        </div>
+        <div class="status-sub" style="color:var(--red);font-weight:700;margin-top:4px">⚠️ ไม่สามารถลงชื่อซ้ำได้วันนี้</div>
+      </div>
+    </div>`;
+
+  // เช็คอินแล้ว ยังไม่เช็คเอาท์
+  if(checkedIn && !checkedOut) {
+    if(formMode==='checkin') return `
+      <div class="status-banner done-in">
+        <span class="status-icon">✅</span>
+        <div>
+          <div class="status-title" style="color:var(--green)">ลงชื่อเข้างานแล้ว</div>
+          <div class="status-sub">เข้างานเมื่อ <strong class="status-time">${checkinTime} น.</strong></div>
+          <div class="status-sub" style="color:var(--red);font-weight:700;margin-top:4px">⚠️ ลงชื่อเข้างานซ้ำไม่ได้</div>
+        </div>
+      </div>`;
+    return `
+      <div class="status-banner done-in">
+        <span class="status-icon">✅</span>
+        <div>
+          <div class="status-title" style="color:var(--green)">ลงชื่อเข้างานแล้ว</div>
+          <div class="status-sub">เข้างานเมื่อ <strong class="status-time">${checkinTime} น.</strong></div>
+          <div class="status-sub" style="color:var(--sky);font-weight:700;margin-top:4px">👉 พร้อมลงชื่อออกงานได้เลย</div>
+        </div>
+      </div>`;
+  }
+
+  // ยังไม่ได้เช็คอิน
+  if(formMode==='checkout') return `
+    <div class="status-banner" style="background:#ffeaea;border:2px solid #ffcfcf">
+      <span class="status-icon">⚠️</span>
+      <div>
+        <div class="status-title" style="color:var(--red)">ยังไม่ได้ลงชื่อเข้างาน</div>
+        <div class="status-sub">กรุณาลงชื่อเข้างานก่อนจึงจะออกงานได้</div>
+      </div>
+    </div>`;
+
+  return `
+    <div class="status-banner done-in" style="background:#f0f8ff;border-color:var(--border)">
+      <span class="status-icon">🟢</span>
+      <div>
+        <div class="status-title" style="color:var(--sky)">ยังไม่ได้ลงชื่อวันนี้</div>
+        <div class="status-sub">พร้อมลงชื่อเข้างานได้เลย</div>
+      </div>
+    </div>`;
+}
+
+function isFormBlocked() {
+  const {todayStatus, formMode, statusChecking} = S;
+  if(statusChecking || !todayStatus || !S.form.name) return false;
+  const {checkedIn, checkedOut} = todayStatus;
+  if(checkedIn && checkedOut) return true;
+  if(formMode==='checkin' && checkedIn) return true;
+  if(formMode==='checkout' && !checkedIn) return true;
+  return false;
+}
+
 const WORK_TYPES = [
   {v:'งานนโยบาย',i:'📌'},{v:'งานประสานงาน',i:'🤝'},
   {v:'งานสารบรรณ',i:'📄'},{v:'ประชุมออนไลน์',i:'💻'},
@@ -730,6 +827,8 @@ function buildForm() {
       <div class="mode-btn ${isIn?'active':''}" onclick="setMode('checkin')">🌅 ลงชื่อเข้างาน</div>
       <div class="mode-btn ${!isIn?'active':''}" onclick="setMode('checkout')">🌆 ลงชื่อออกงาน</div>
     </div>
+
+    ${buildStatusBanner()}
 
     <div class="form-mode-banner ${isIn?'checkin':'checkout'}">
       <span style="font-size:24px">${isIn?'🌅':'🌆'}</span>
@@ -812,8 +911,14 @@ function buildForm() {
     </div>
 
     ${S.error?`<div style="color:var(--red);font-size:13px;text-align:center;margin-bottom:12px;font-weight:600">⚠️ ${S.error}</div>`:''}
-    <button class="btn-primary full" id="btn-submit" ${S.submitting?'disabled':''}>
-      ${S.submitting?'⏳ กำลังบันทึก...':(isIn?'✅ ลงชื่อเข้างาน':'🌆 ลงชื่อออกงาน')}
+    <button class="btn-primary full" id="btn-submit"
+      ${(S.submitting||isFormBlocked())?'disabled':''}
+      style="${isFormBlocked()?'opacity:0.4;cursor:not-allowed;filter:grayscale(1)':''}">
+      ${S.submitting?'⏳ กำลังบันทึก...'
+        : isFormBlocked() ? (S.todayStatus&&S.todayStatus.checkedIn&&S.formMode==='checkin'?'🔒 ลงชื่อเข้างานแล้ววันนี้'
+            : S.todayStatus&&!S.todayStatus.checkedIn&&S.formMode==='checkout'?'⚠️ ต้องเข้างานก่อน'
+            : '🔒 ลงชื่อครบแล้ววันนี้')
+        : (isIn?'✅ ยืนยันลงชื่อเข้างาน':'🌆 ยืนยันลงชื่อออกงาน')}
     </button>
     <div style="height:8px"></div>`;
 }
@@ -859,12 +964,21 @@ function buildDashboard() {
     </div>`;
 
   if(!d) return filters+buildLoading();
+  if(d.error) return filters+`<div class="empty-state"><span class="emoji">❌</span><p>โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</p></div>`;
+
+  // ป้องกัน undefined — ใช้ ?? 0 ทุก field
+  const checkinVal  = d.checkin  ?? d.checkinCount  ?? 0;
+  const missingVal  = d.missing  ?? d.missingCount  ?? 0;
+  const checkoutVal = d.checkout ?? d.checkoutCount ?? 0;
+  const totalVal    = d.total    ?? d.totalCount    ?? 0;
+
+  console.log('📊 KPI values:', {checkinVal, missingVal, checkoutVal, totalVal, raw: d});
 
   const kpis = [
-    {icon:'✅',val:d.checkin,  label:'Check-in',  color:'var(--lg)',    border:'#a8e8c4',bg:'#e6f9f0'},
-    {icon:'⏳',val:d.missing,  label:'รอลงชื่อ',  color:'var(--red)',   border:'#ffcfcf',bg:'#ffeaea'},
-    {icon:'🌆',val:d.checkout, label:'Check-out', color:'var(--orange)',border:'#ffd0a0',bg:'#fff5ea'},
-    {icon:'👥',val:d.total,    label:'ทั้งหมด',   color:'var(--navy)',  border:'var(--border)',bg:'var(--bg2)'},
+    {icon:'✅',val:checkinVal,  label:'Check-in',  color:'var(--lg)',    border:'#a8e8c4',bg:'#e6f9f0'},
+    {icon:'⏳',val:missingVal,  label:'รอลงชื่อ',  color:'var(--red)',   border:'#ffcfcf',bg:'#ffeaea'},
+    {icon:'🌆',val:checkoutVal, label:'Check-out', color:'var(--orange)',border:'#ffd0a0',bg:'#fff5ea'},
+    {icon:'👥',val:totalVal,    label:'ทั้งหมด',   color:'var(--navy)',  border:'var(--border)',bg:'var(--bg2)'},
   ];
 
   const kpiGrid = `
@@ -968,7 +1082,12 @@ function bindEvents() {
   const fg = document.getElementById('f-group');
   if(fg) fg.addEventListener('change',e=>{S.form.group=e.target.value;S.form.name='';render();});
   const fn = document.getElementById('f-name');
-  if(fn) fn.addEventListener('change',e=>{S.form.name=e.target.value;});
+  if(fn) fn.addEventListener('change',e=>{
+    S.form.name = e.target.value;
+    S.todayStatus = null;
+    if(e.target.value) checkTodayStatus(e.target.value);
+    else render();
+  });
   const bs = document.getElementById('btn-submit');
   if(bs) bs.addEventListener('click', handleSubmit);
   const fd = document.getElementById('f-date');
@@ -983,16 +1102,27 @@ function bindEvents() {
 ════════════════════════════════════════════ */
 function setMode(mode) {
   S.formMode = mode; S.error = null; render();
+  if(S.form.name) checkTodayStatus(S.form.name);
 }
 function setDayType(v) { S.form.dayType=v; render(); }
 function resetForm() {
-  S.view='form'; S.form={group:'',name:'',dayType:'WFH',plan1:'',plan2:'',plan3:'',summary1:'',summary2:'',summary3:'',workTypes:[],signature:''};
-  S.error=null; render();
+  S.view='form';
+  S.form={group:'',name:'',dayType:'WFH',plan1:'',plan2:'',plan3:'',summary1:'',summary2:'',summary3:'',workTypes:[],signature:''};
+  S.error=null; S.todayStatus=null; render();
 }
 function switchView(v) {
   S.view=v; S.error=null; closeSidebar();
   if(v==='dashboard'){S.dashboard=null;render();loadDashboard();}
   else render();
+}
+
+async function checkTodayStatus(name) {
+  S.statusChecking = true; render();
+  try {
+    const res = await api({ action:'checkStatus', name });
+    S.todayStatus = res;
+  } catch(e) { S.todayStatus = null; }
+  S.statusChecking = false; render();
 }
 function showDetail(g) {
   S.view='detail';S.detailGroup=g;S.groupDetail=null;render();loadGroupDetail(g);
@@ -1148,8 +1278,13 @@ async function loadInit() {
 async function loadDashboard() {
   try {
     const r = await api({action:'getDashboard',date:S.selDate,group:S.selGroup});
-    S.dashboard=r;
-  } catch(e){S.dashboard={error:true};}
+    console.log('📊 Dashboard raw response:', JSON.stringify(r));
+    // JSONP บางครั้ง wrap มาใน array — unwrap ถ้าจำเป็น
+    S.dashboard = Array.isArray(r) ? r[0] : r;
+  } catch(e){
+    console.error('Dashboard error:', e);
+    S.dashboard={error:true};
+  }
   if(S.view==='dashboard') render();
 }
 async function loadGroupDetail(g) {
