@@ -495,7 +495,7 @@ a { text-decoration: none; }
 </nav>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbyk0K5uB7eb-ZjCI-tiTbMxq0hJ6kabNP2CPk3IAm1nDlJ78pTsOkjTMnxuoTSpWYRb-A/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyQhRrrv3bE7_YHWeCnQKLnbj87sdCnYWYzmITqn4LQ3MuzNjcQsNp1sJBIlBigviQApQ/exec';
 
 /* ════════════════════════════════════════════
    STATE
@@ -1043,18 +1043,36 @@ async function handleSubmit() {
   if(!f.workTypes||f.workTypes.length===0){S.error='กรุณาเลือกประเภทงานอย่างน้อย 1 ประเภท';render();return;}
   if(!f.signature){S.error='กรุณาเซ็นลายมือชื่อก่อนยืนยัน';render();setTimeout(initSignaturePad,60);return;}
 
-  S.submitting=true;S.error=null;render();
+  S.submitting=true; S.error=null; render();
   try {
-    const action=S.formMode==='checkin'?'submitCheckin':'submitCheckout';
-    const params={action,...f,workTypes:(f.workTypes||[]).join(',')};
-    const res=await api(params);
-    if(res.success){
-      S.view='success';S.submittedAt=res.time;S.submittedName=f.name;S.submitting=false;
-    } else {
-      S.error=res.message||'เกิดข้อผิดพลาด';S.submitting=false;
+    const action = S.formMode==='checkin' ? 'submitCheckin' : 'submitCheckout';
+
+    // Step 1: ส่งข้อมูลหลักก่อน (ไม่รวม signature — signature ใหญ่เกินไปสำหรับ URL)
+    const mainParams = {
+      action,
+      group   : f.group,
+      name    : f.name,
+      dayType : f.dayType,
+      plan1   : f.plan1||'', plan2: f.plan2||'', plan3: f.plan3||'',
+      summary1: f.summary1||'', summary2: f.summary2||'', summary3: f.summary3||'',
+      workTypes: (f.workTypes||[]).join(','),
+    };
+    const res = await api(mainParams);
+
+    if(!res.success) {
+      S.error = res.message||'เกิดข้อผิดพลาด'; S.submitting=false; render(); return;
     }
+
+    // Step 2: ส่ง signature แยก (ถ้ามี rowId กลับมา)
+    if(f.signature && res.rowId) {
+      try {
+        await api({ action:'saveSignature', rowId: res.rowId, signature: f.signature });
+      } catch(e) { /* signature อาจเก็บไม่ได้ แต่ไม่ block การลงชื่อ */ }
+    }
+
+    S.view='success'; S.submittedAt=res.time; S.submittedName=f.name; S.submitting=false;
   } catch(err){
-    S.error='ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่';S.submitting=false;
+    S.error='ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่'; S.submitting=false;
   }
   render();
 }
@@ -1066,18 +1084,32 @@ function initSignaturePad() {
   const canvas=document.getElementById('sig-canvas');
   if(!canvas) return;
   const wrap=canvas.parentElement;
-  canvas.width=canvas.offsetWidth;
+  // ใช้ขนาดเล็กลง เพื่อลด base64 size
+  canvas.width  = Math.min(canvas.offsetWidth, 400);
+  canvas.height = 110;
   const ctx=canvas.getContext('2d');
-  ctx.strokeStyle='#0b2545';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle='#0b2545'; ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round';
   let drawing=false;
   function pos(e){
     const r=canvas.getBoundingClientRect();
     const s=e.touches?e.touches[0]:e;
-    return{x:(s.clientX-r.left)*(canvas.width/r.width),y:(s.clientY-r.top)*(canvas.height/r.height)};
+    return{x:(s.clientX-r.left)*(canvas.width/r.width), y:(s.clientY-r.top)*(canvas.height/r.height)};
   }
-  function start(e){e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);document.getElementById('sig-placeholder')?.classList.add('hidden');wrap.classList.add('has-sig');}
-  function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);}
-  function end(){drawing=false;S.form.signature=canvas.toDataURL('image/png');}
+  function saveCompressed() {
+    // บีบอัดเป็น JPEG quality 0.4 → ขนาด ~3-5KB แทน 50KB
+    S.form.signature = canvas.toDataURL('image/jpeg', 0.4);
+  }
+  function start(e){
+    e.preventDefault(); drawing=true;
+    const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y);
+    document.getElementById('sig-placeholder')?.classList.add('hidden');
+    wrap.classList.add('has-sig');
+  }
+  function move(e){
+    if(!drawing) return; e.preventDefault();
+    const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y);
+  }
+  function end(){ drawing=false; saveCompressed(); }
   canvas.addEventListener('mousedown',start,{passive:false});
   canvas.addEventListener('mousemove',move,{passive:false});
   canvas.addEventListener('mouseup',end);
@@ -1086,8 +1118,8 @@ function initSignaturePad() {
   canvas.addEventListener('touchmove',move,{passive:false});
   canvas.addEventListener('touchend',end);
   if(S.form.signature){
-    const img=new Image();img.onload=()=>ctx.drawImage(img,0,0);img.src=S.form.signature;
-    wrap.classList.add('has-sig');document.getElementById('sig-placeholder')?.classList.add('hidden');
+    const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0); img.src=S.form.signature;
+    wrap.classList.add('has-sig'); document.getElementById('sig-placeholder')?.classList.add('hidden');
   }
 }
 function clearSignature(){
